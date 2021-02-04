@@ -5,9 +5,42 @@
 // (https://www.boost.org/LICENSE_1_0.txt or see accompanying file
 // LICENSE_BOOST_1_0.txt)
 
+// Reference: http://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html
+
 use fon::{chan::Ch16, stereo::Stereo16, Audio, Frame};
 use std::convert::TryInto;
 use std::{fs, io, mem::size_of};
+
+pub mod chunk;
+
+mod decoder;
+mod encoder;
+
+pub use decoder::Decoder;
+pub use encoder::Encoder;
+
+/// RIFF WAV Decoder Result Type.
+pub type Result<T> = std::result::Result<T, Error>;
+
+/// Decoder Error.
+pub enum Error {
+    /// The file is missing the RIFF Header.
+    NotRiff,
+    /// The file is a RIFF file, but not a WAV file.
+    NotWav,
+    /// The "fmt" chunk is missing from the file.
+    FmtMissing,
+    /// The size of the "fmt" chunk is invalid.
+    FmtSize,
+    /// The format is invalid.
+    Format,
+    /// Subformat contains invalid data.
+    Subformat,
+    /// Unknown chunk.
+    Chunk([u8; 4]),
+    /// An I/O Error
+    Io(std::io::Error),
+}
 
 /// Write a 16-bit PCM WAV file
 pub fn write<F: Frame>(audio: Audio<F>, filename: &str) -> io::Result<()>
